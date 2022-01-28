@@ -153,6 +153,12 @@ static blk_t *blk_get(uint32_t ino, uint32_t idx) {
   /* Locate a block in the buffer and return it if found. */
 #ifdef STUDENT
   /* TODO */
+  blk = TAILQ_FIRST(bucket);
+  while (blk != NULL) {
+    if (blk->b_inode == ino && blk->b_index == idx)
+      return blk;
+    blk = TAILQ_NEXT(blk, b_hash);
+  }
 #endif /* !STUDENT */
 
   long blkaddr = ext2_blkaddr_read(ino, idx);
