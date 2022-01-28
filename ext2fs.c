@@ -207,6 +207,18 @@ int ext2_block_used(uint32_t blkaddr) {
   int used = 0;
 #ifdef STUDENT
   /* TODO */
+  uint32_t block_group_index = (blkaddr - 1) / blocks_per_group;
+  uint32_t block_bitmap_index = group_desc[block_group_index].gd_b_bitmap;
+  blk_t *block_bitmap = blk_get(0, block_bitmap_index);
+
+  uint32_t block_index = (blkaddr - 1) % blocks_per_group;
+  uint32_t block_byte_index = block_index / 8;
+  uint32_t block_bit_index = block_index % 8;
+
+  used = (*(uint32_t *)(block_bitmap->b_data + block_byte_index) &
+          (1 << block_bit_index));
+
+  blk_put(block_bitmap);
 #endif /* !STUDENT */
   return used;
 }
@@ -219,6 +231,18 @@ int ext2_inode_used(uint32_t ino) {
   int used = 0;
 #ifdef STUDENT
   /* TODO */
+  uint32_t inode_group_index = (ino - 1) / inodes_per_group;
+  uint32_t inode_bitmap_index = group_desc[inode_group_index].gd_i_bitmap;
+  blk_t *inode_bitmap = blk_get(0, inode_bitmap_index);
+
+  uint32_t inode_index = (ino - 1) % inodes_per_group;
+  uint32_t inode_byte_index = inode_index / 8;
+  uint32_t inode_bit_index = inode_index % 8;
+
+  used = (*(uint32_t *)(inode_bitmap->b_data + inode_byte_index) &
+          (1 << inode_bit_index));
+
+  blk_put(inode_bitmap);
 #endif /* !STUDENT */
   return used;
 }
@@ -228,9 +252,17 @@ int ext2_inode_used(uint32_t ino) {
 static int ext2_inode_read(off_t ino, ext2_inode_t *inode) {
 #ifdef STUDENT
   /* TODO */
-  (void)ino;
-  (void)inode;
-  return ENOENT;
+  if (!ext2_inode_used(ino))
+    return ENOENT;
+
+  uint32_t inode_index = (ino - 1) % inodes_per_group;
+  uint32_t inode_group_index = (ino - 1) / inodes_per_group;
+  uint32_t inodes_table = group_desc[inode_group_index].gd_i_tables;
+
+  ext2_read(0, inode,
+            BLKSIZE * inodes_table + inode_index * sizeof(ext2_inode_t),
+            sizeof(ext2_inode_t));
+
 #endif /* !STUDENT */
   return 0;
 }
@@ -239,8 +271,10 @@ static int ext2_inode_read(off_t ino, ext2_inode_t *inode) {
 static uint32_t ext2_blkptr_read(uint32_t blkaddr, uint32_t blkidx) {
 #ifdef STUDENT
   /* TODO */
-  (void)blkaddr;
-  (void)blkidx;
+  blk_t *block = blk_get(0, blkaddr);
+  uint32_t block_ptr = *((uint32_t *)(block->b_data) + blkidx);
+  blk_put(block);
+  return block_ptr;
 #endif /* !STUDENT */
   return 0;
 }
