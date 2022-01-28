@@ -1,6 +1,3 @@
-/* Wojciech Adamiec, 310064
-I am author of this source code */
-
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
