@@ -1,3 +1,6 @@
+/* Wojciech Adamiec, 310064
+I am author of this source code */
+
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -119,6 +122,8 @@ static blk_t *blk_alloc(void) {
   if (!TAILQ_EMPTY(&freelst)) {
 #ifdef STUDENT
     /* TODO */
+    blk = TAILQ_FIRST(&freelst);
+    TAILQ_REMOVE(&freelst, blk, b_link);
 #endif /* !STUDENT */
     return blk;
   }
@@ -128,6 +133,10 @@ static blk_t *blk_alloc(void) {
   if (!TAILQ_EMPTY(&lrulst)) {
 #ifdef STUDENT
     /* TODO */
+    blk = TAILQ_LAST(&lrulst, blk_list);
+    TAILQ_REMOVE(&lrulst, blk, b_link);
+    blk_list_t *bucket = &buckets[BUCKET(blk->b_inode, blk->b_index)];
+    TAILQ_REMOVE(bucket, blk, b_hash);
 #endif /* !STUDENT */
     return blk;
   }
@@ -387,13 +396,17 @@ int ext2_mount(const char *fspath) {
      * Read group descriptor table into memory. */
 #ifdef STUDENT
   /* TODO */
-  (void)inodes_per_group;
-  (void)blocks_per_group;
-  (void)group_desc_count;
-  (void)block_count;
-  (void)inode_count;
-  (void)first_data_block;
-  (void)group_desc;
+  inodes_per_group = sb.sb_ipg;
+  blocks_per_group = sb.sb_bpg;
+  block_count = sb.sb_bcount;
+  group_desc_count = block_count % blocks_per_group == 0 ? block_count / blocks_per_group : block_count / blocks_per_group + 1;
+  inode_count = sb.sb_icount;
+  first_data_block = sb.sb_first_dblock;
+
+  group_desc = malloc(group_desc_count * sizeof(ext2_groupdesc_t));
+  
+  ext2_read(0, group_desc, EXT2_GDOFF,
+            group_desc_count * sizeof(ext2_groupdesc_t));
 #endif /* !STUDENT */
   return ENOTSUP;
 }
