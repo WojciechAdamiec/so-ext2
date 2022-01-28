@@ -324,7 +324,17 @@ int ext2_stat(uint32_t ino, struct stat *st) {
     /* Convert the metadata! */
 #ifdef STUDENT
   /* TODO */
-  (void)st;
+  st->st_ino = ino;
+  st->st_mode = inode.i_mode;
+  st->st_nlink = inode.i_nlink;
+  st->st_uid = inode.i_uid;
+  st->st_gid = inode.i_gid;
+  st->st_size = inode.i_size;
+  st->st_blksize = BLKSIZE;
+  st->st_blocks = inode.i_nblock;
+  st->st_atime = inode.i_atime;
+  st->st_mtime = inode.i_mtime;
+  st->st_ctime = inode.i_ctime;
 #endif /* !STUDENT */
   return ENOTSUP;
 }
