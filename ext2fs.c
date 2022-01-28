@@ -399,12 +399,14 @@ int ext2_mount(const char *fspath) {
   inodes_per_group = sb.sb_ipg;
   blocks_per_group = sb.sb_bpg;
   block_count = sb.sb_bcount;
-  group_desc_count = block_count % blocks_per_group == 0 ? block_count / blocks_per_group : block_count / blocks_per_group + 1;
+  group_desc_count = block_count % blocks_per_group == 0
+                       ? block_count / blocks_per_group
+                       : block_count / blocks_per_group + 1;
   inode_count = sb.sb_icount;
   first_data_block = sb.sb_first_dblock;
 
   group_desc = malloc(group_desc_count * sizeof(ext2_groupdesc_t));
-  
+
   ext2_read(0, group_desc, EXT2_GDOFF,
             group_desc_count * sizeof(ext2_groupdesc_t));
 #endif /* !STUDENT */
