@@ -326,9 +326,17 @@ int ext2_read(uint32_t ino, void *data, size_t pos, size_t len) {
 int ext2_readdir(uint32_t ino, uint32_t *off_p, ext2_dirent_t *de) {
 #ifdef STUDENT
   /* TODO */
-  (void)ino;
-  (void)off_p;
-  (void)de;
+  ext2_inode_t inode;
+  ext2_inode_read(ino, &inode);
+
+  while (inode.i_size > *off_p) {
+    ext2_read(ino, de, *off_p, de_name_offset);
+    ext2_read(ino, de->de_name, *off_p + de_name_offset, de->de_namelen);
+    de->de_name[de->de_namelen] = '\0';
+    *off_p = *off_p + de->de_reclen;
+    if (de->de_ino)
+      return 1;
+  }
 #endif /* !STUDENT */
   return 0;
 }
@@ -346,8 +354,21 @@ int ext2_readlink(uint32_t ino, char *buf, size_t buflen) {
     /* Check if it's a symlink and read it. */
 #ifdef STUDENT
   /* TODO */
-  (void)buf;
-  (void)buflen;
+  if ((inode.i_mode & EXT2_IFMT) != EXT2_IFLNK)
+    return EINVAL;
+
+  if (inode.i_size > buflen)
+    return EINVAL;
+
+  if (inode.i_size > EXT2_MAXSYMLINKLEN) {
+    if (ext2_read(ino, buf, 0, inode.i_size) < 0)
+      return EINVAL;
+    return 0;
+  } else {
+    memcpy(buf, inode.i_blocks, inode.i_size);
+    return 0;
+  }
+
 #endif /* !STUDENT */
   return ENOTSUP;
 }
@@ -397,8 +418,19 @@ int ext2_lookup(uint32_t ino, const char *name, uint32_t *ino_p,
 
 #ifdef STUDENT
   /* TODO */
-  (void)ino_p;
-  (void)type_p;
+  if ((inode.i_mode & EXT2_IFMT) != EXT2_IFDIR)
+    return ENOTDIR;
+
+  ext2_dirent_t directory_entry;
+  uint32_t offset = 0;
+
+  while (ext2_readdir(ino, &offset, &directory_entry)) {
+    if (strcmp(name, directory_entry.de_name) == 0) {
+      *ino_p = directory_entry.de_ino;
+      *type_p = directory_entry.de_type;
+      return 0;
+    }
+  }
 #endif /* !STUDENT */
 
   return ENOENT;
