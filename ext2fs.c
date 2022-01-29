@@ -315,12 +315,12 @@ int ext2_read(uint32_t ino, void *data, size_t pos, size_t len) {
       is_safe_to_read = false;
   }
 
-  if (is_safe_to_read){
+  if (is_safe_to_read) {
     size_t already_copied = 0;
     blk_t *current_block;
-    size_t data_fragment_length; 
+    size_t data_fragment_length;
 
-    while(already_copied < len){
+    while (already_copied < len) {
       uint32_t block_index = pos / BLKSIZE;
       uint32_t position_in_block = pos % BLKSIZE;
 
@@ -328,13 +328,15 @@ int ext2_read(uint32_t ino, void *data, size_t pos, size_t len) {
       current_block = blk_get(ino, block_index);
 
       // Compute a length of data we need to copy from this block
-      data_fragment_length = min(BLKSIZE - position_in_block, len - already_copied);
+      data_fragment_length =
+        min(BLKSIZE - position_in_block, len - already_copied);
 
       // Copy a data fragment
       if (current_block == BLK_ZERO)
         memset(data, 0, data_fragment_length);
-      else{
-        memcpy(data, (current_block->b_data) + position_in_block, data_fragment_length);
+      else {
+        memcpy(data, (current_block->b_data) + position_in_block,
+               data_fragment_length);
         blk_put(current_block);
       }
 
@@ -345,7 +347,7 @@ int ext2_read(uint32_t ino, void *data, size_t pos, size_t len) {
     }
     return 0;
   }
-  
+
 #endif /* !STUDENT */
   return EINVAL;
 }
