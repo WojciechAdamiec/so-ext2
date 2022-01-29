@@ -306,12 +306,46 @@ long ext2_blkaddr_read(uint32_t ino, uint32_t blkidx) {
 int ext2_read(uint32_t ino, void *data, size_t pos, size_t len) {
 #ifdef STUDENT
   /* TODO */
-  (void)ino;
-  (void)data;
-  (void)pos;
-  (void)len;
-  (void)blk_get;
-  (void)blk_put;
+  bool is_safe_to_read = true;
+
+  if (ino != 0) {
+    ext2_inode_t inode;
+    ext2_inode_read(ino, &inode);
+    if (inode.i_size < pos + len)
+      is_safe_to_read = false;
+  }
+
+  if (is_safe_to_read){
+    size_t already_copied = 0;
+    blk_t *current_block;
+    size_t data_fragment_length; 
+
+    while(already_copied < len){
+      uint32_t block_index = pos / BLKSIZE;
+      uint32_t position_in_block = pos % BLKSIZE;
+
+      // Get a whole block pos is pointing into
+      current_block = blk_get(ino, block_index);
+
+      // Compute a length of data we need to copy from this block
+      data_fragment_length = min(BLKSIZE - position_in_block, len - already_copied);
+
+      // Copy a data fragment
+      if (current_block == BLK_ZERO)
+        memset(data, 0, data_fragment_length);
+      else{
+        memcpy(data, (current_block->b_data) + position_in_block, data_fragment_length);
+        blk_put(current_block);
+      }
+
+      // Set variables for next iteration
+      already_copied += data_fragment_length;
+      data += data_fragment_length;
+      pos += data_fragment_length;
+    }
+    return 0;
+  }
+  
 #endif /* !STUDENT */
   return EINVAL;
 }
@@ -354,10 +388,7 @@ int ext2_readlink(uint32_t ino, char *buf, size_t buflen) {
     /* Check if it's a symlink and read it. */
 #ifdef STUDENT
   /* TODO */
-  if ((inode.i_mode & EXT2_IFMT) != EXT2_IFLNK)
-    return EINVAL;
-
-  if (inode.i_size > buflen)
+  if ((inode.i_mode & EXT2_IFMT) != EXT2_IFLNK || inode.i_size > buflen)
     return EINVAL;
 
   if (inode.i_size > EXT2_MAXSYMLINKLEN) {
