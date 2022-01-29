@@ -293,7 +293,61 @@ long ext2_blkaddr_read(uint32_t ino, uint32_t blkidx) {
     /* Read direct pointers or pointers from indirect blocks. */
 #ifdef STUDENT
   /* TODO */
-  (void)ext2_blkptr_read;
+
+  // Ranges for blocks locations
+  size_t direct_blksz = EXT2_NDADDR;
+  size_t single_indirect_blksz = direct_blksz + BLK_POINTERS;
+  size_t double_indirect_blksz =
+    single_indirect_blksz + BLK_POINTERS * BLK_POINTERS;
+  size_t triple_indirect_blksz =
+    double_indirect_blksz + BLK_POINTERS * BLK_POINTERS * BLK_POINTERS;
+
+  uint32_t rel_blkidx = blkidx;
+
+  // direct blocks
+  if (blkidx < direct_blksz)
+    return inode.i_blocks[rel_blkidx];
+
+  // single indirect block
+  if (blkidx < single_indirect_blksz) {
+    rel_blkidx = blkidx - direct_blksz;
+
+    uint32_t single_depth_block_addr = inode.i_blocks[direct_blksz];
+    return ext2_blkptr_read(single_depth_block_addr, rel_blkidx);
+  }
+
+  // double indirect block
+  if (blkidx < double_indirect_blksz) {
+    rel_blkidx = blkidx - single_indirect_blksz;
+
+    uint32_t single_depth_rel_blkidx = rel_blkidx / BLK_POINTERS;
+    uint32_t double_depth_rel_blkidx = rel_blkidx % BLK_POINTERS;
+
+    uint32_t single_depth_block_addr = inode.i_blocks[direct_blksz + 1];
+    uint32_t double_depth_block_addr =
+      ext2_blkptr_read(single_depth_block_addr, single_depth_rel_blkidx);
+
+    return ext2_blkptr_read(double_depth_block_addr, double_depth_rel_blkidx);
+  }
+
+  // triple indirect block
+  if (blkidx < triple_indirect_blksz) {
+    rel_blkidx = blkidx - double_indirect_blksz;
+
+    uint32_t single_depth_rel_blkidx =
+      rel_blkidx / (BLK_POINTERS * BLK_POINTERS);
+    uint32_t double_depth_rel_blkidx = rel_blkidx / BLK_POINTERS;
+    uint32_t triple_depth_rel_blkidx = rel_blkidx % BLK_POINTERS;
+
+    uint32_t single_depth_block_addr = inode.i_blocks[direct_blksz + 2];
+    uint32_t double_depth_block_addr =
+      ext2_blkptr_read(single_depth_block_addr, single_depth_rel_blkidx);
+    uint32_t triple_depth_block_addr =
+      ext2_blkptr_read(double_depth_block_addr, double_depth_rel_blkidx);
+
+    return ext2_blkptr_read(triple_depth_block_addr, triple_depth_rel_blkidx);
+  }
+
 #endif /* !STUDENT */
   return -1;
 }
